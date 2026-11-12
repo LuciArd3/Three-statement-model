@@ -5,7 +5,7 @@ balance sheet and cash flow statement, built step by step from real 10-K data.
 
 ## Status
 - [x] Step 1: balance sheet by hand, with a check that assets = liabilities + equity
-- [ ] Step 2: income statement and cash flow statement
+- [x] Step 2: income statement and cash flow statement
 - [ ] Step 3: history ratios (growth, margins, working capital)
 - [ ] Step 4: income statement forecast
 - [ ] Step 5: balance sheet forecast, cash derived from the cash flow statement
@@ -23,7 +23,7 @@ Expected output: one line per year, each ending in "balances".
 - Data is typed from the company's 10-K (Item 8, Financial Statements).
 
 ## Data and disclaimer
-Figures come from [company] filings on sec.gov. This is an educational project,
+Figures come from Apple filings on sec.gov. This is an educational project,
 not financial advice.
 
 ## What I learned
