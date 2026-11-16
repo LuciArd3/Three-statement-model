@@ -11,10 +11,7 @@ balance sheet and cash flow statement, built step by step from real 10-K data.
 - [ ] Step 5: balance sheet forecast, cash derived from the cash flow statement
 - [ ] Step 6: scenarios, tests, report
 
-## How to run
-```
-python step1_simple.py
-```
+
 Expected output: one line per year, each ending in "balances".
 
 ## Design notes
@@ -22,9 +19,6 @@ Expected output: one line per year, each ending in "balances".
 - Every step ends with a check that can fail (for example, the balance sheet must balance).
 - Data is typed from the company's 10-K (Item 8, Financial Statements).
 
-## Data and disclaimer
+## Data
 Figures come from Apple filings on sec.gov. This is an educational project,
 not financial advice.
-
-## What I learned
-- (add one or two lines after each step)
