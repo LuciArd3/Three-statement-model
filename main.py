@@ -58,7 +58,7 @@ class Ratios :
     gross_margin : Optional[float]
     opex_pct_revenue : Optional[float] #how much of each dollar of sales goes to running the company
     tax_rate : Optional[float]
-    recivable_days : Optional[float]
+    receivable_days : Optional[float]
     inventory_days : Optional[float]
     payable_days : Optional[float]
 
@@ -85,7 +85,7 @@ def compute_ratios(bs : BalanceSheet, curr_is : IncomeStatement, prev_is :Option
         gross_margin=safe_division(curr_is.revenue - curr_is.cost_of_sales , curr_is.revenue),
         opex_pct_revenue= safe_division(curr_is.operating_expenses , curr_is.revenue),
         tax_rate=safe_division(curr_is.tax, pretax_profit),
-        recivable_days= days_of(bs.receivables , curr_is.revenue),
+        receivable_days= days_of(bs.receivables , curr_is.revenue),
         inventory_days= days_of(bs.inventory , curr_is.cost_of_sales),
         payable_days= days_of(bs.payables, curr_is.cost_of_sales)
     )
@@ -109,13 +109,25 @@ def report_is(i_s: IncomeStatement) -> None:
     status = "ties" if diff == 0 else f"OFF BY {diff}"
     print(f"{i_s.year}: net income={i_s.net_income} -> {status}")
 
-def report_cfs(cfs : CashFlowStatement):
+def report_cfs(cfs : CashFlowStatement) -> None:
     """The difference should be 0 for the numbers to tie"""
     diff = cfs.difference()
     status = "ties" if diff== 0 else f"OFF BY {diff}"
     print(f"{cfs.year}: ending cash={cfs.ending_cash} -> {status}")
 
+def pct(x: Optional[float]) -> str:
+    """Format a ratio as a percentage"""
+    return "n/a" if x is None else f"{x:.1%}"
 
+def num(x: Optional[float]) -> str:
+    """Format a number with one decimal"""
+    return "n/a" if x is None else f"{x:.1f}"
+
+def report_ratios(r: Ratios) -> None:
+    print(f"{r.year}: growth:{pct(r.revenue_growth)}  gross margin:{pct(r.gross_margin)}  "
+          f"opex:{pct(r.opex_pct_revenue)}  tax rate:{pct(r.tax_rate)}  "
+          f"receivable days:{num(r.receivable_days)}  inventory days:{num(r.inventory_days)}  "
+          f"payable days:{num(r.payable_days)}")
 
 
 if __name__ == "__main__":
@@ -144,19 +156,17 @@ if __name__ == "__main__":
     for cfs in aapl_cfs : 
         report_cfs(cfs)
 
-    assert aapl_bs[0].difference() == 0 and aapl_bs[1].difference() == 0
-    assert aapl_is[0].difference() == 0 and aapl_is[1].difference() == 0 
-    assert aapl_cfs[0].difference() == 0 and aapl_cfs[1].difference() == 0 
-
-
     assert all(s.difference() == 0 for s in aapl_bs + aapl_is + aapl_cfs)
 
     for i_s , cfs in zip(aapl_is, aapl_cfs):
         assert i_s.year == cfs.year
         assert i_s.net_income == cfs.net_income , f"{i_s.year}: net income differs between the IS and the CFS"
-        assert aapl_cfs[1].beginning_cash == aapl_cfs[0].ending_cash, "2026 beginning cash != 2025 ending cash!"
+    assert aapl_cfs[1].beginning_cash == aapl_cfs[0].ending_cash, "2026 beginning cash != 2025 ending cash!"
 
     ratios= []
     for i , (bs, curr_is) in enumerate(zip(aapl_bs , aapl_is)):
-        prev = aapl_is[i-1] if i > 0 else None
+        prev_is = aapl_is[i-1] if i > 0 else None
         ratios.append(compute_ratios(bs , curr_is , prev_is))
+
+    for r in ratios : 
+        report_ratios(r)
