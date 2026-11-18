@@ -1,134 +1,6 @@
-from dataclasses import dataclass
-from typing import Optional
-
-@dataclass
-class BalanceSheet:
-    year: int
-    cash: int
-    receivables: int
-    inventory: int
-    ppe: int  
-    payables: int
-    debt: int
-    equity: int
-    other_assets: int = 0
-    other_liabilities: int = 0
-
-    def total_assets(self) -> int:
-        return self.cash + self.receivables + self.inventory + self.ppe + self.other_assets
-
-    def total_liabilities_and_equity(self) -> int:
-        return self.payables + self.debt + self.other_liabilities + self.equity
-
-    def difference(self) -> int:
-        """Assets - (liabilities + equity). Must be 0."""
-        return self.total_assets() - self.total_liabilities_and_equity()
-
-@dataclass
-class IncomeStatement:
-    year : int
-    revenue : int 
-    cost_of_sales : int
-    operating_expenses: int
-    other_income : int
-    tax : int 
-    net_income : int
-
-    def difference(self) -> int:
-        return (self.revenue + self.other_income - self.cost_of_sales - self.operating_expenses - self.tax - self.net_income) 
-
-@dataclass
-class CashFlowStatement:
-    year:int 
-    net_income : int 
-    beginning_cash : int
-    operating : int
-    investing : int
-    financing : int
-    ending_cash : int 
-    fx_effect : int = 0 #apple does not present one but other companies might
-
-    def difference(self) -> int:
-        return (self.beginning_cash + self.operating + self.investing + self.financing + self.fx_effect - self.ending_cash)
-
-@dataclass(frozen=True)
-class Ratios :
-    year : int 
-    revenue_growth : Optional[float]
-    gross_margin : Optional[float]
-    opex_pct_revenue : Optional[float] #how much of each dollar of sales goes to running the company
-    tax_rate : Optional[float]
-    receivable_days : Optional[float]
-    inventory_days : Optional[float]
-    payable_days : Optional[float]
-
-
-
-def safe_division(n : int , d : int ) -> Optional[float]: 
-    """For handling the case when d is 0, avoiding a crash"""
-    return None if d == 0 else n /d
-
-def compute_ratios(bs : BalanceSheet, curr_is : IncomeStatement, prev_is :Optional[IncomeStatement]) ->Ratios:
-    """For turning the statements of a year into ratios that can be used for forecasting"""
-    if bs.year != curr_is.year :
-        raise ValueError(f"years do not match: balance sheet {bs.year}, income statement {curr_is.year}")
-
-    pretax_profit = curr_is.revenue - curr_is.cost_of_sales - curr_is.operating_expenses + curr_is.other_income
-
-    growth : Optional[float]= None
-    if prev_is is not None and prev_is.revenue != 0 : 
-        growth = curr_is.revenue / prev_is.revenue - 1  
-
-    return Ratios(
-        year=curr_is.year, 
-        revenue_growth=growth, 
-        gross_margin=safe_division(curr_is.revenue - curr_is.cost_of_sales , curr_is.revenue),
-        opex_pct_revenue= safe_division(curr_is.operating_expenses , curr_is.revenue),
-        tax_rate=safe_division(curr_is.tax, pretax_profit),
-        receivable_days= days_of(bs.receivables , curr_is.revenue),
-        inventory_days= days_of(bs.inventory , curr_is.cost_of_sales),
-        payable_days= days_of(bs.payables, curr_is.cost_of_sales)
-    )
-
-
-def days_of(balance : int, base:int ) -> Optional[float]:
-    """Return balance as days of base (balance / base * 365)"""
-    ratio = safe_division(balance,base)
-    return None if ratio is None else ratio * 365
-
-
-def report_bs(bs: BalanceSheet) -> None:
-    """The difference should be 0 for the numbers to tie"""
-    diff = bs.difference()
-    status = "balances" if diff == 0 else f"OFF BY {diff}"
-    print(f"{bs.year}: Total_assets={bs.total_assets()}  Liabilities+Equity={bs.total_liabilities_and_equity()}  -> {status}")
-
-def report_is(i_s: IncomeStatement) -> None:
-    """The difference should be 0 for the numbers to tie"""
-    diff = i_s.difference()
-    status = "ties" if diff == 0 else f"OFF BY {diff}"
-    print(f"{i_s.year}: net income={i_s.net_income} -> {status}")
-
-def report_cfs(cfs : CashFlowStatement) -> None:
-    """The difference should be 0 for the numbers to tie"""
-    diff = cfs.difference()
-    status = "ties" if diff== 0 else f"OFF BY {diff}"
-    print(f"{cfs.year}: ending cash={cfs.ending_cash} -> {status}")
-
-def pct(x: Optional[float]) -> str:
-    """Format a ratio as a percentage"""
-    return "n/a" if x is None else f"{x:.1%}"
-
-def num(x: Optional[float]) -> str:
-    """Format a number with one decimal"""
-    return "n/a" if x is None else f"{x:.1f}"
-
-def report_ratios(r: Ratios) -> None:
-    print(f"{r.year}: growth:{pct(r.revenue_growth)}  gross margin:{pct(r.gross_margin)}  "
-          f"opex:{pct(r.opex_pct_revenue)}  tax rate:{pct(r.tax_rate)}  "
-          f"receivable days:{num(r.receivable_days)}  inventory days:{num(r.inventory_days)}  "
-          f"payable days:{num(r.payable_days)}")
-
+from models import BalanceSheet , IncomeStatement , CashFlowStatement
+from ratios import compute_ratios
+from reports import report_bs , report_is , report_cfs , report_ratios
 
 if __name__ == "__main__":
     aapl_bs = [
@@ -170,3 +42,16 @@ if __name__ == "__main__":
 
     for r in ratios : 
         report_ratios(r)
+
+    assert ratios[0].revenue_growth is None
+    assert abs(ratios[1].revenue_growth - 0.1506) < 0.0005
+    assert abs(ratios[0].gross_margin - 0.4691) < 0.0005
+    assert abs(ratios[1].gross_margin - 0.4879) < 0.0005
+    assert abs(ratios[0].tax_rate - 0.1561) < 0.0005
+    assert abs(ratios[1].tax_rate - 0.1699) < 0.0005
+    assert abs(ratios[1].receivable_days - 33.4) < 0.05
+    
+    zero_bs = BalanceSheet(2030, 0, 0, 0, 0, 0, 0, 0)
+    zero_is = IncomeStatement(2030, 0, 0, 0, 0, 0, 0)
+    z = compute_ratios(zero_bs, zero_is, zero_is)
+    assert z.revenue_growth is None and z.gross_margin is None and z.tax_rate is None
